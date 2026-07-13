@@ -1,7 +1,0 @@
-pandas
-numpy
-geopandas
-shapely
-folium
-matplotlib
-seaborn
