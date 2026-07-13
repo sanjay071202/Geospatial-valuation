@@ -1,87 +1,69 @@
 """
-Week 1: Load and Clean Data
-Load the king county house data CSV and perform data cleaning operations.
+Week 1 — Load, clean, and outlier-filter the housing dataset.
 """
 
 import pandas as pd
 import numpy as np
 from pathlib import Path
 
+RAW_DATA_PATH = Path("data/raw/kc_house_data.csv")
+CLEAN_DATA_PATH = Path("data/processed/kc_house_clean.csv")
 
-def load_data(filepath):
-    """
-    Load the house data from CSV file.
-    
-    Args:
-        filepath (str): Path to the CSV file
-        
-    Returns:
-        pd.DataFrame: Loaded data
-    """
-    try:
-        df = pd.read_csv(filepath)
-        print(f"Data loaded successfully. Shape: {df.shape}")
-        return df
-    except FileNotFoundError:
-        print(f"Error: File not found at {filepath}")
-        return None
+LAT_COL = "lat"
+LONG_COL = "long"
+PRICE_COL = "price"
+
+LAT_BOUNDS = (47.1, 47.8)
+LONG_BOUNDS = (-122.6, -121.3)
 
 
-def clean_data(df):
-    """
-    Clean the house data.
-    
-    Operations:
-    - Remove duplicates
-    - Handle missing values
-    - Remove outliers
-    - Convert data types
-    
-    Args:
-        df (pd.DataFrame): Raw data
-        
-    Returns:
-        pd.DataFrame: Cleaned data
-    """
-    # Remove duplicates
-    df = df.drop_duplicates()
-    print(f"Duplicates removed. New shape: {df.shape}")
-    
-    # Display info about missing values
-    print("\nMissing values:")
-    print(df.isnull().sum())
-    
-    # TODO: Add your cleaning logic here
-    # - Handle missing values
-    # - Remove outliers
-    # - Convert data types
-    
+def load_data(path: Path) -> pd.DataFrame:
+    print(f"Loading raw data from {path} ...")
+    df = pd.read_csv(path)
+    print(f"  -> {len(df):,} rows, {df.shape[1]} columns")
     return df
 
 
-def save_cleaned_data(df, output_path):
-    """
-    Save cleaned data to CSV.
-    
-    Args:
-        df (pd.DataFrame): Cleaned data
-        output_path (str): Path to save the CSV file
-    """
-    df.to_csv(output_path, index=False)
-    print(f"Cleaned data saved to {output_path}")
+def clean_data(df: pd.DataFrame) -> pd.DataFrame:
+    before = len(df)
+    df = df.drop_duplicates()
+
+    for col in (LAT_COL, LONG_COL, PRICE_COL):
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    df = df.dropna(subset=[LAT_COL, LONG_COL, PRICE_COL])
+    df = df[df[LAT_COL].between(*LAT_BOUNDS) & df[LONG_COL].between(*LONG_BOUNDS)]
+    df = df[df[PRICE_COL] > 0]
+
+    print(f"Cleaning: {before:,} -> {len(df):,} rows ({before - len(df):,} removed)")
+    return df.reset_index(drop=True)
+
+
+def remove_price_outliers(df: pd.DataFrame, method: str = "iqr") -> pd.DataFrame:
+    before = len(df)
+
+    if method == "iqr":
+        q1, q3 = df[PRICE_COL].quantile([0.25, 0.75])
+        iqr = q3 - q1
+        lower, upper = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+        df = df[df[PRICE_COL].between(lower, upper)]
+    else:
+        raise ValueError(f"Unknown method: {method}")
+
+    print(f"Outlier filtering ({method}): {before:,} -> {len(df):,} rows ({before - len(df):,} removed)")
+    df["price_log"] = np.log1p(df[PRICE_COL])
+    return df.reset_index(drop=True)
+
+
+def main():
+    df = load_data(RAW_DATA_PATH)
+    df = clean_data(df)
+    df = remove_price_outliers(df, method="iqr")
+
+    CLEAN_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(CLEAN_DATA_PATH, index=False)
+    print(f"Saved cleaned dataset -> {CLEAN_DATA_PATH} ({len(df):,} rows)")
 
 
 if __name__ == "__main__":
-    # Define paths
-    raw_data_path = Path(__file__).parent.parent / "data" / "raw" / "kc_house_data.csv"
-    output_path = Path(__file__).parent.parent / "data" / "processed" / "cleaned_data.csv"
-    
-    # Load data
-    df = load_data(raw_data_path)
-    
-    if df is not None:
-        # Clean data
-        df_cleaned = clean_data(df)
-        
-        # Save cleaned data
-        save_cleaned_data(df_cleaned, output_path)
+    main()
