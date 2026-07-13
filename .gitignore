@@ -21,6 +21,20 @@ data/*
 models/*
 !models/.gitkeep
 
+# Raw and generated dataset files
+*.csv
+
+# Model artifacts
+*.pt
+*.h5
+
+# Virtual environments
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
 # Logs and local settings
 *.log
 .vscode/
