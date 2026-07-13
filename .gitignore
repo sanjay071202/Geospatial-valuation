@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.py[cod]
 *.pyo
@@ -11,29 +11,21 @@ venv/
 # Jupyter
 .ipynb_checkpoints/
 
-# Data and model artifacts
-data/*
+# Data and model folders — keep folders, ignore contents
+data/**
+!data/**/
 !data/.gitkeep
-!data/raw/
 !data/raw/.gitkeep
-!data/processed/
 !data/processed/.gitkeep
-models/*
+
+models/**
+!models/**/
 !models/.gitkeep
 
 # Raw and generated dataset files
 *.csv
-
-# Model artifacts
 *.pt
 *.h5
-
-# Virtual environments
-venv/
-.venv/
-
-# Jupyter
-.ipynb_checkpoints/
 
 # Logs and local settings
 *.log
