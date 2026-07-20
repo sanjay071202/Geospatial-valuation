@@ -1,0 +1,6 @@
+{
+  "model": "XGBoost baseline",
+  "mape": 0.153,
+  "rmse": 76688.04,
+  "n_test_samples": 1845
+}
